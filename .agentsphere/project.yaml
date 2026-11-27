@@ -10,8 +10,8 @@ components:
   verify:
   - ruff check .
   - pytest
-  - pip install -q --break-system-packages -r requirements.txt
-  - pytest --junitxml=.agentsphere/reports/junit.xml
+  - pip install -q --break-system-packages -r requirements.txt && ruff check . &&
+    pytest --junitxml=.agentsphere/reports/junit.xml
   artifacts_ignore: []
   verifySlots:
     lint:
