@@ -22,6 +22,7 @@ def _ensure_deps():
 def _get_client():
     _ensure_deps()
     from fastapi.testclient import TestClient
+
     from app.main import app
     return TestClient(app)
 
@@ -47,5 +48,6 @@ def test_docs_returns_200():
 def test_app_instance_exported():
     _ensure_deps()
     from fastapi import FastAPI
+
     from app.main import app as exported_app
     assert isinstance(exported_app, FastAPI)

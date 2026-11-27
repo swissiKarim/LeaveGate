@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard – LeaveGate{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<section aria-labelledby="dashboard-heading">
+  <h2 id="dashboard-heading" class="sr-only">Übersicht</h2>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:32px;">
+    <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;" data-testid="kpi-open">
+      <div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">Offene Anträge</div>
+      <div style="font-size:2rem;font-weight:700;color:var(--accent);">0</div>
+    </div>
+    <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;" data-testid="kpi-approved">
+      <div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">Genehmigt (Monat)</div>
+      <div style="font-size:2rem;font-weight:700;color:#16a34a;">0</div>
+    </div>
+    <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;" data-testid="kpi-rejected">
+      <div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">Abgelehnt (Monat)</div>
+      <div style="font-size:2rem;font-weight:700;color:#dc2626;">0</div>
+    </div>
+    <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;" data-testid="kpi-low-leave">
+      <div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">&lt; 5 Resttage</div>
+      <div style="font-size:2rem;font-weight:700;color:#d97706;">0</div>
+    </div>
+  </div>
+
+  <!-- Inline SVG bar chart -->
+  <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;" data-testid="chart-requests-by-type">
+    <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:16px;color:var(--text);">Anträge nach Typ</h3>
+    <svg viewBox="0 0 320 120" width="100%" height="120" aria-label="Balkendiagramm Anträge nach Typ" role="img">
+      <text x="20" y="110" font-size="11" fill="currentColor" opacity="0.6">Urlaub</text>
+      <text x="130" y="110" font-size="11" fill="currentColor" opacity="0.6">Homeoffice</text>
+      <text x="245" y="110" font-size="11" fill="currentColor" opacity="0.6">Krank</text>
+      <rect x="20" y="90" width="60" height="10" rx="2" fill="#2563eb" opacity="0.3"/>
+      <rect x="130" y="90" width="60" height="10" rx="2" fill="#16a34a" opacity="0.3"/>
+      <rect x="245" y="90" width="60" height="10" rx="2" fill="#d97706" opacity="0.3"/>
+    </svg>
+  </div>
+</section>
+{% endblock %}
