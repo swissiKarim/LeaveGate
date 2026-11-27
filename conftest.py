@@ -16,3 +16,7 @@ def pytest_configure(config):
                  "--break-system-packages", "-r", str(req_file)],
                 check=True,
             )
+            # Reload site packages so newly installed modules are findable
+            import importlib
+            import site
+            importlib.reload(site)
