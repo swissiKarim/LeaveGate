@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}{{ emp.name }} bearbeiten – LeaveGate{% endblock %}
+{% block page_title %}Mitarbeitenden bearbeiten{% endblock %}
+
+{% block content %}
+<section aria-labelledby="employee-edit-heading">
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <a href="/employees/{{ emp.id }}"
+       class="btn btn-secondary"
+       data-testid="employee-back-btn"
+       aria-label="Zurück zur Detailseite">← Zurück</a>
+  </div>
+
+  <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;max-width:520px;">
+    <h2 id="employee-edit-heading"
+        style="font-size:1.1rem;font-weight:600;margin-bottom:24px;">
+      {{ emp.name }} bearbeiten
+    </h2>
+
+    <form id="employee-edit-form"
+          data-testid="employee-form"
+          novalidate
+          style="display:flex;flex-direction:column;gap:18px;">
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label for="employee-name-input"
+               style="font-size:0.85rem;font-weight:500;">
+          Name
+        </label>
+        <input
+          type="text"
+          id="employee-name-input"
+          name="name"
+          data-testid="employee-name"
+          required
+          autocomplete="name"
+          value="{{ emp.name }}"
+          style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-surface);color:var(--text);font-size:0.95rem;"
+          aria-label="Name des Mitarbeitenden"
+        />
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label for="employee-email-input"
+               style="font-size:0.85rem;font-weight:500;">
+          Email
+        </label>
+        <input
+          type="email"
+          id="employee-email-input"
+          name="email"
+          data-testid="employee-email"
+          required
+          autocomplete="email"
+          value="{{ emp.email }}"
+          style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-surface);color:var(--text);font-size:0.95rem;"
+          aria-label="E-Mail-Adresse"
+        />
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label for="employee-team-input"
+               style="font-size:0.85rem;font-weight:500;">
+          Team
+        </label>
+        <input
+          type="text"
+          id="employee-team-input"
+          name="team"
+          data-testid="employee-team"
+          required
+          value="{{ emp.team }}"
+          style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-surface);color:var(--text);font-size:0.95rem;"
+          aria-label="Team"
+        />
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label for="employee-remaining-days-input"
+               style="font-size:0.85rem;font-weight:500;">
+          Resturlaub (Tage)
+        </label>
+        <input
+          type="number"
+          id="employee-remaining-days-input"
+          name="remaining_days"
+          data-testid="employee-remaining-days"
+          value="{{ emp.remaining_days }}"
+          min="0"
+          required
+          style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-surface);color:var(--text);font-size:0.95rem;"
+          aria-label="Verbleibende Urlaubstage"
+        />
+      </div>
+
+      <div id="employee-form-error"
+           role="alert"
+           style="display:none;padding:10px 14px;background:#fef2f2;border:1px solid #fca5a5;border-radius:var(--radius);color:#b91c1c;font-size:0.9rem;"
+           data-testid="employee-form-error">
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:4px;">
+        <button
+          type="submit"
+          class="btn btn-primary"
+          data-testid="employee-submit"
+          aria-label="Änderungen speichern">
+          Speichern
+        </button>
+        <a href="/employees/{{ emp.id }}"
+           class="btn btn-secondary"
+           data-testid="employee-cancel-btn"
+           aria-label="Abbrechen">
+          Abbrechen
+        </a>
+      </div>
+
+    </form>
+  </div>
+
+</section>
+
+{% block extra_scripts %}
+<script>
+  (function () {
+    const empId = {{ emp.id }};
+    const form = document.getElementById('employee-edit-form');
+    const errBox = document.getElementById('employee-form-error');
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      errBox.style.display = 'none';
+
+      const data = {
+        name: form.elements['name'].value.trim(),
+        email: form.elements['email'].value.trim(),
+        team: form.elements['team'].value.trim(),
+        remaining_days: parseInt(form.elements['remaining_days'].value, 10),
+      };
+
+      try {
+        const resp = await fetch('/api/employees/' + empId, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        const json = await resp.json();
+        if (resp.ok) {
+          window.location.href = '/employees/' + empId;
+        } else {
+          errBox.textContent = json.detail || json.error || 'Fehler beim Speichern.';
+          errBox.style.display = 'block';
+        }
+      } catch (err) {
+        errBox.textContent = 'Netzwerkfehler: ' + err.message;
+        errBox.style.display = 'block';
+      }
+    });
+  })();
+</script>
+{% endblock %}
+{% endblock %}

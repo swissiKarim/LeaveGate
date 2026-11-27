@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}{{ emp.name }} – LeaveGate{% endblock %}
+{% block page_title %}Mitarbeitende{% endblock %}
+
+{% block content %}
+<section aria-labelledby="employee-detail-heading">
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <a href="/employees"
+       class="btn btn-secondary"
+       data-testid="employee-back-btn"
+       aria-label="Zurück zur Mitarbeitendenliste">← Zurück</a>
+    <a href="/employees/{{ emp.id }}/edit"
+       class="btn btn-primary"
+       data-testid="employee-edit-btn"
+       aria-label="Mitarbeitenden bearbeiten">Bearbeiten</a>
+  </div>
+
+  <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;max-width:600px;"
+       data-testid="employee-detail-card">
+
+    <h2 id="employee-detail-heading"
+        style="font-size:1.3rem;font-weight:700;margin-bottom:20px;"
+        data-testid="employee-detail-name">{{ emp.name }}</h2>
+
+    <dl style="display:grid;grid-template-columns:140px 1fr;gap:12px 16px;">
+
+      <dt style="font-size:0.85rem;font-weight:600;color:var(--text-muted);padding-top:2px;">E-Mail</dt>
+      <dd data-testid="employee-detail-email">
+        <a href="mailto:{{ emp.email }}">{{ emp.email }}</a>
+      </dd>
+
+      <dt style="font-size:0.85rem;font-weight:600;color:var(--text-muted);padding-top:2px;">Team</dt>
+      <dd data-testid="employee-detail-team">{{ emp.team }}</dd>
+
+      <dt style="font-size:0.85rem;font-weight:600;color:var(--text-muted);padding-top:2px;">Resturlaub</dt>
+      <dd data-testid="employee-detail-remaining-days">
+        <span style="font-weight:600;{% if emp.remaining_days < 5 %}color:#d97706;{% endif %}">
+          {{ emp.remaining_days }} Tage
+        </span>
+      </dd>
+
+      <dt style="font-size:0.85rem;font-weight:600;color:var(--text-muted);padding-top:2px;">ID</dt>
+      <dd data-testid="employee-detail-id" style="color:var(--text-muted);">{{ emp.id }}</dd>
+
+    </dl>
+  </div>
+
+</section>
+{% endblock %}
