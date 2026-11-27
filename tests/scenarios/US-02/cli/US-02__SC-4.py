@@ -5,7 +5,9 @@ import sys
 from pathlib import Path
 
 # Ensure workspace root is on sys.path regardless of CWD
-workspace = Path(__file__).parents[4]
+workspace = Path(__file__).parents[4].resolve()
+if not (workspace / "app").is_dir():
+    workspace = Path.cwd()
 if str(workspace) not in sys.path:
     sys.path.insert(0, str(workspace))
 
