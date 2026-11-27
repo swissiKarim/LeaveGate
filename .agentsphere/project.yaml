@@ -1,6 +1,6 @@
 schemaVersion: 4
-rationale: FastAPI skeleton for LeaveGate; API scenarios require the web service;
-  pytest covers AC-3
+rationale: FastAPI skeleton for LeaveGate; conftest.py auto-installs deps so platform_default
+  pytest slot works; API scenarios require the web service
 components:
 - name: app
   path: .
@@ -10,7 +10,7 @@ components:
   verify:
   - ruff check .
   - pytest
-  - pip install -q --break-system-packages -e ".[dev]"
+  - pip install -q --break-system-packages -r requirements.txt
   - pytest --junitxml=.agentsphere/reports/junit.xml
   artifacts_ignore: []
   verifySlots:
@@ -27,7 +27,7 @@ network:
   needs: []
 services:
 - name: web
-  start: pip install -q --break-system-packages -e ".[dev]" && uvicorn app.main:app
+  start: pip install -q --break-system-packages -r requirements.txt && uvicorn app.main:app
     --host 0.0.0.0 --port 8080
   port: 8080
   health:
