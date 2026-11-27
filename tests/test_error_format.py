@@ -28,6 +28,7 @@ def _ensure_deps():
 def _get_client():
     _ensure_deps()
     from fastapi.testclient import TestClient
+
     from app.main import app
     return TestClient(app, raise_server_exceptions=False)
 
@@ -89,6 +90,7 @@ def test_422_via_pydantic_model():
     # Copy exception handlers from main app
     from fastapi.exceptions import RequestValidationError
     from starlette.exceptions import HTTPException as StarletteHTTPException
+
     from app.main import http_exception_handler, validation_exception_handler
 
     test_app.add_exception_handler(StarletteHTTPException, http_exception_handler)
@@ -129,10 +131,11 @@ def test_error_response_has_no_nested_fastapi_detail_list():
     """The unified format must not expose FastAPI's default {'detail': [...]} list structure."""
     _ensure_deps()
     from fastapi import FastAPI
+    from fastapi.exceptions import RequestValidationError
     from fastapi.testclient import TestClient
     from pydantic import BaseModel
-    from fastapi.exceptions import RequestValidationError
     from starlette.exceptions import HTTPException as StarletteHTTPException
+
     from app.main import http_exception_handler, validation_exception_handler
 
     test_app = FastAPI()
