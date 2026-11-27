@@ -1,5 +1,6 @@
 schemaVersion: 4
-rationale: 'greenfield: derived from requirement (deterministic)'
+rationale: FastAPI skeleton for LeaveGate; API scenarios require the web service;
+  pytest covers AC-3
 components:
 - name: app
   path: .
@@ -9,6 +10,7 @@ components:
   verify:
   - ruff check .
   - pytest
+  - pytest --junitxml=.agentsphere/reports/junit.xml
   artifacts_ignore: []
   verifySlots:
     lint:
