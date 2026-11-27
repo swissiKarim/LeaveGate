@@ -1,4 +1,27 @@
 """Pytest fixtures for LeaveGate tests – use in-memory SQLite."""
+import subprocess
+import sys
+from pathlib import Path
+
+
+def _ensure_deps():
+    """Install requirements if fastapi is not importable."""
+    try:
+        import fastapi  # noqa: F401
+    except ImportError:
+        req = Path(__file__).parent.parent / "requirements.txt"
+        subprocess.run(
+            [sys.executable, "-m", "pip", "install", "-q",
+             "--break-system-packages", "-r", str(req)],
+            check=True,
+        )
+        import importlib
+        import site
+        importlib.reload(site)
+
+
+_ensure_deps()
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
