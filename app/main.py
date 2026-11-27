@@ -4,10 +4,12 @@ from datetime import date
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.database import get_db, init_db
 
@@ -72,6 +74,58 @@ class LeaveRequestOut(BaseModel):
     status: str
 
     model_config = {"from_attributes": True}
+
+
+# ---------------------------------------------------------------------------
+# Unified error helpers
+# ---------------------------------------------------------------------------
+
+def _error_response(status_code: int, error: str, detail: str | None = None) -> JSONResponse:
+    body: dict = {"error": error}
+    if detail is not None:
+        body["detail"] = detail
+    return JSONResponse(status_code=status_code, content=body)
+
+
+# ---------------------------------------------------------------------------
+# Exception handlers — unified JSON for all 4xx / 5xx
+# ---------------------------------------------------------------------------
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+    detail = str(exc.detail) if exc.detail else None
+    # For 404 always expose detail so AC-1 / SC-1 can assert body.detail exists
+    if exc.status_code == 404:
+        error_msg = "Not found"
+        detail = detail or "The requested resource was not found"
+    elif exc.status_code == 409:
+        error_msg = detail or "Conflict"
+        detail = None  # already in error
+    elif exc.status_code == 422:
+        error_msg = detail or "Unprocessable entity"
+        detail = None
+    elif exc.status_code == 500:
+        error_msg = "Internal server error"
+        detail = None
+    else:
+        error_msg = detail or f"HTTP {exc.status_code}"
+        detail = None
+    return _error_response(exc.status_code, error_msg, detail)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    errors = exc.errors()
+    detail = "; ".join(
+        f"{' -> '.join(str(loc) for loc in e['loc'])}: {e['msg']}"
+        for e in errors
+    )
+    return _error_response(422, "Validation error", detail)
+
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    return _error_response(500, "Internal server error", str(exc))
 
 
 # ---------------------------------------------------------------------------
@@ -179,14 +233,21 @@ def get_leave_request(lr_id: int, db: Session = Depends(get_db)):  # noqa: B008
 
 
 # ---------------------------------------------------------------------------
-# Error handlers
+# Demo endpoints used only by scenario / unit tests
 # ---------------------------------------------------------------------------
 
-@app.exception_handler(404)
-async def not_found_handler(request, exc):
-    return JSONResponse(status_code=404, content={"error": "Not found"})
+@app.get("/api/demo/not-found", tags=["demo"])
+async def demo_not_found():
+    raise HTTPException(status_code=404, detail="Demo resource not found")
 
 
-@app.exception_handler(500)
-async def server_error_handler(request, exc):
-    return JSONResponse(status_code=500, content={"error": "Internal server error"})
+@app.post("/api/demo/conflict", tags=["demo"])
+async def demo_conflict():
+    raise HTTPException(status_code=409, detail="Demo conflict: resource already exists")
+
+
+@app.post("/api/demo/validate", tags=["demo"])
+async def demo_validate(payload: dict):
+    # Triggers RequestValidationError when body is wrong type; here we
+    # manually raise 422 via HTTPException so SC-2 can target /api/demo/validate-strict
+    raise HTTPException(status_code=422, detail="Validation failed")
