@@ -4,21 +4,24 @@ import json
 import sys
 from pathlib import Path
 
-# Add workspace root to sys.path so 'app' package is importable
-_workspace = Path(__file__).resolve().parents[4]
-sys.path.insert(0, str(_workspace))
 
-from app.database import DATABASE_URL, engine, init_db  # must come after sys.path setup
+def _setup_path():
+    """Add workspace root to sys.path so 'app' package is importable."""
+    workspace = Path(__file__).resolve().parents[4]
+    if str(workspace) not in sys.path:
+        sys.path.insert(0, str(workspace))
+    return workspace
 
 
 def _run():
-    # Derive the actual DB file path from DATABASE_URL
-    # DATABASE_URL is like "sqlite:////abs/path/leavegate.db"
+    workspace = _setup_path()
+    from app.database import DATABASE_URL, engine, init_db
+
     db_file = Path(DATABASE_URL.replace("sqlite:///", ""))
-    # Remove stale DB so we verify fresh creation
+    if not db_file.is_absolute():
+        db_file = workspace / db_file
     if db_file.exists():
         db_file.unlink()
-    # Dispose pool so SQLite re-opens the file on next connect
     engine.dispose()
     init_db()
     return db_file.exists()

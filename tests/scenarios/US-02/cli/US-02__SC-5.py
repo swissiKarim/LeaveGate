@@ -5,14 +5,16 @@ import subprocess
 import sys
 from pathlib import Path
 
-# Workspace root: 4 parents up from this file
-_workspace = Path(__file__).resolve().parents[4]
+
+def _workspace():
+    return Path(__file__).resolve().parents[4]
+
 
 result = subprocess.run(
     [sys.executable, "-m", "pytest", "tests/test_models.py", "-v", "--tb=short", "-q"],
     capture_output=True,
     check=False,
-    cwd=str(_workspace),
+    cwd=str(_workspace()),
     text=True,
 )
 
