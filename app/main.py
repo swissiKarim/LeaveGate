@@ -12,6 +12,14 @@ from sqlalchemy.orm import Session
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.database import get_db, init_db
+from app.services.leave_service import (
+    BusinessRuleError,
+    InvalidTransitionError,
+    ValidationError,
+    apply_transition,
+    count_workdays,
+    validate_new_leave_request,
+)
 
 
 @asynccontextmanager
@@ -65,9 +73,9 @@ class LeaveRequestCreate(BaseModel):
     type: str
     start_date: date
     end_date: date
-    days: int = 1
     reason: str | None = None
-    status: str = "draft"
+    # days is computed by the domain service; client value is ignored
+    days: int | None = None
 
 
 class LeaveRequestOut(BaseModel):
@@ -81,6 +89,10 @@ class LeaveRequestOut(BaseModel):
     status: str
 
     model_config = {"from_attributes": True}
+
+
+class StatusTransitionIn(BaseModel):
+    status: str
 
 
 # ---------------------------------------------------------------------------
@@ -323,10 +335,39 @@ def list_leave_requests(db: Session = Depends(get_db)):  # noqa: B008
 )
 def create_leave_request(payload: LeaveRequestCreate, db: Session = Depends(get_db)):  # noqa: B008
     from app.models import Employee, LeaveRequest
+
     emp = db.get(Employee, payload.employee_id)
     if emp is None:
         raise HTTPException(status_code=404, detail="Employee not found")
-    lr = LeaveRequest(**payload.model_dump())
+
+    # AC-2: compute workdays; return 422 for invalid ranges
+    try:
+        computed_days = count_workdays(payload.start_date, payload.end_date)
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    # AC-3 & AC-4: business rule checks
+    try:
+        validate_new_leave_request(
+            db=db,
+            employee_id=payload.employee_id,
+            leave_type=payload.type,
+            start=payload.start_date,
+            end=payload.end_date,
+            days=computed_days,
+        )
+    except BusinessRuleError as exc:
+        return JSONResponse(status_code=409, content={"error": str(exc)})
+
+    lr = LeaveRequest(
+        employee_id=payload.employee_id,
+        type=payload.type,
+        start_date=payload.start_date,
+        end_date=payload.end_date,
+        days=computed_days,
+        reason=payload.reason,
+        status="draft",
+    )
     db.add(lr)
     db.commit()
     db.refresh(lr)
@@ -344,6 +385,55 @@ def get_leave_request(lr_id: int, db: Session = Depends(get_db)):  # noqa: B008
     if lr is None:
         raise HTTPException(status_code=404, detail="Leave request not found")
     return lr
+
+
+@app.post(
+    "/api/leave-requests/{lr_id}/status",
+    response_model=LeaveRequestOut,
+    tags=["leave-requests"],
+)
+def transition_leave_request_status(
+    lr_id: int,
+    payload: StatusTransitionIn,
+    db: Session = Depends(get_db),  # noqa: B008
+):
+    """Apply a status transition to a leave request (AC-1)."""
+    from app.models import LeaveRequest
+
+    lr = db.get(LeaveRequest, lr_id)
+    if lr is None:
+        raise HTTPException(status_code=404, detail="Leave request not found")
+
+    try:
+        new_status = apply_transition(lr.status, payload.status)
+    except InvalidTransitionError as exc:
+        return JSONResponse(status_code=409, content={"error": str(exc)})
+
+    lr.status = new_status
+    db.commit()
+    db.refresh(lr)
+    return lr
+
+
+@app.delete(
+    "/api/leave-requests/{lr_id}",
+    status_code=204,
+    tags=["leave-requests"],
+)
+def delete_leave_request(lr_id: int, db: Session = Depends(get_db)):  # noqa: B008
+    """Only draft requests may be deleted."""
+    from app.models import LeaveRequest
+
+    lr = db.get(LeaveRequest, lr_id)
+    if lr is None:
+        raise HTTPException(status_code=404, detail="Leave request not found")
+    if lr.status != "draft":
+        return JSONResponse(
+            status_code=409,
+            content={"error": f"Only draft requests may be deleted (current status: '{lr.status}')."},
+        )
+    db.delete(lr)
+    db.commit()
 
 
 # ---------------------------------------------------------------------------
