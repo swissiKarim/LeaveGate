@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Mitarbeitende – LeaveGate{% endblock %}
+{% block page_title %}Mitarbeitende{% endblock %}
+
+{% block content %}
+<section aria-labelledby="employees-heading">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+    <h2 id="employees-heading" style="font-size:1.1rem;font-weight:600;">Mitarbeitendenliste</h2>
+    <a href="/employees/new"
+       class="btn btn-primary"
+       data-testid="employee-new-btn"
+       aria-label="Neuen Mitarbeitenden anlegen">
+      + Neu
+    </a>
+  </div>
+
+  <!-- Filter form – parameters are preserved in URL -->
+  <form method="get" action="/employees"
+        style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;"
+        data-testid="employee-filter-form">
+
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <label for="filter-q" style="font-size:0.8rem;font-weight:500;color:var(--text-muted);">Suche</label>
+      <input
+        type="search"
+        id="filter-q"
+        name="q"
+        value="{{ q }}"
+        placeholder="Name oder E-Mail …"
+        data-testid="filter-q"
+        style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-surface);color:var(--text);font-size:0.9rem;"
+        aria-label="Suche nach Name oder E-Mail"
+      />
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <label for="filter-team" style="font-size:0.8rem;font-weight:500;color:var(--text-muted);">Team</label>
+      <select
+        id="filter-team"
+        name="team"
+        data-testid="filter-team"
+        style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-surface);color:var(--text);font-size:0.9rem;"
+        aria-label="Team filtern"
+      >
+        <option value="">Alle Teams</option>
+        {% for t in all_teams %}
+        <option value="{{ t }}" {% if t == team %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <label for="filter-sort" style="font-size:0.8rem;font-weight:500;color:var(--text-muted);">Sortierung</label>
+      <select
+        id="filter-sort"
+        name="sort"
+        data-testid="filter-sort"
+        style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-surface);color:var(--text);font-size:0.9rem;"
+        aria-label="Sortierung wählen"
+      >
+        <option value="">Standard</option>
+        <option value="name" {% if sort == 'name' %}selected{% endif %}>Name A–Z</option>
+        <option value="-name" {% if sort == '-name' %}selected{% endif %}>Name Z–A</option>
+        <option value="team" {% if sort == 'team' %}selected{% endif %}>Team A–Z</option>
+        <option value="remaining_days" {% if sort == 'remaining_days' %}selected{% endif %}>Resturlaub ↑</option>
+        <option value="-remaining_days" {% if sort == '-remaining_days' %}selected{% endif %}>Resturlaub ↓</option>
+      </select>
+    </div>
+
+    <div style="display:flex;align-items:flex-end;">
+      <button type="submit"
+              class="btn btn-primary"
+              data-testid="filter-submit"
+              aria-label="Filter anwenden">
+        Filtern
+      </button>
+    </div>
+  </form>
+
+  <!-- Employee list table -->
+  <div data-testid="employee-list"
+       style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
+    {% if employees %}
+    <table style="width:100%;border-collapse:collapse;" aria-label="Mitarbeitendenliste">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);background:var(--bg);">
+          <th style="padding:10px 16px;text-align:left;font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Name</th>
+          <th style="padding:10px 16px;text-align:left;font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">E-Mail</th>
+          <th style="padding:10px 16px;text-align:left;font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Team</th>
+          <th style="padding:10px 16px;text-align:right;font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Resturlaub</th>
+          <th style="padding:10px 16px;text-align:right;font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Aktionen</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for emp in employees %}
+        <tr style="border-bottom:1px solid var(--border);" data-testid="employee-row-{{ emp.id }}">
+          <td style="padding:12px 16px;">
+            <a href="/employees/{{ emp.id }}"
+               data-testid="employee-link-{{ emp.id }}"
+               style="font-weight:500;">{{ emp.name }}</a>
+          </td>
+          <td style="padding:12px 16px;color:var(--text-muted);">{{ emp.email }}</td>
+          <td style="padding:12px 16px;">{{ emp.team }}</td>
+          <td style="padding:12px 16px;text-align:right;">
+            <span style="font-weight:600;{% if emp.remaining_days < 5 %}color:#d97706;{% endif %}">
+              {{ emp.remaining_days }}
+            </span>
+          </td>
+          <td style="padding:12px 16px;text-align:right;">
+            <a href="/employees/{{ emp.id }}/edit"
+               class="btn btn-secondary"
+               data-testid="employee-edit-btn-{{ emp.id }}"
+               style="font-size:0.8rem;padding:4px 10px;"
+               aria-label="Mitarbeitenden {{ emp.name }} bearbeiten">
+              Bearbeiten
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="padding:40px;text-align:center;color:var(--text-muted);"
+         data-testid="employee-empty">
+      Keine Mitarbeitenden gefunden.
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Pagination -->
+  {% if current_page > 1 or employees|length == 20 %}
+  <nav style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;"
+       aria-label="Seitennavigation"
+       data-testid="employee-pagination">
+    {% if current_page > 1 %}
+    <a href="/employees?q={{ q }}&team={{ team }}&sort={{ sort }}&page={{ current_page - 1 }}"
+       class="btn btn-secondary"
+       data-testid="page-prev"
+       aria-label="Vorherige Seite">← Zurück</a>
+    {% endif %}
+    <span style="display:flex;align-items:center;padding:0 8px;font-size:0.9rem;color:var(--text-muted);">
+      Seite {{ current_page }}
+    </span>
+    {% if employees|length == 20 %}
+    <a href="/employees?q={{ q }}&team={{ team }}&sort={{ sort }}&page={{ current_page + 1 }}"
+       class="btn btn-secondary"
+       data-testid="page-next"
+       aria-label="Nächste Seite">Weiter →</a>
+    {% endif %}
+  </nav>
+  {% endif %}
+
+</section>
+{% endblock %}

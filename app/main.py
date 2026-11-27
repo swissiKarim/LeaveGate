@@ -157,6 +157,89 @@ async def dashboard(request: Request):
 
 
 # ---------------------------------------------------------------------------
+# Employees UI
+# ---------------------------------------------------------------------------
+
+@app.get("/employees", response_class=HTMLResponse, tags=["ui"])
+def employees_list(
+    request: Request,
+    q: str | None = None,
+    team: str | None = None,
+    sort: str | None = None,
+    page: int = 1,
+    db: Session = Depends(get_db),  # noqa: B008
+):
+    from app.models import Employee
+
+    query = db.query(Employee)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            Employee.name.ilike(like) | Employee.email.ilike(like)
+        )
+    if team:
+        query = query.filter(Employee.team == team)
+    if sort:
+        col = sort.lstrip("-")
+        col_attr = getattr(Employee, col, None)
+        if col_attr is not None:
+            query = query.order_by(col_attr.desc() if sort.startswith("-") else col_attr)
+    page_size = 20
+    offset = (max(page, 1) - 1) * page_size
+    employees = query.offset(offset).limit(page_size).all()
+    # Distinct teams for filter dropdown
+    all_teams = [row[0] for row in db.query(Employee.team).distinct().order_by(Employee.team).all()]
+    return templates.TemplateResponse(
+        request,
+        "employees/list.html",
+        {
+            "page": "employees",
+            "employees": employees,
+            "q": q or "",
+            "team": team or "",
+            "sort": sort or "",
+            "current_page": page,
+            "all_teams": all_teams,
+        },
+    )
+
+
+@app.get("/employees/new", response_class=HTMLResponse, tags=["ui"])
+def employee_new_form(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "employees/new.html",
+        {"page": "employees"},
+    )
+
+
+@app.get("/employees/{emp_id}", response_class=HTMLResponse, tags=["ui"])
+def employee_detail(emp_id: int, request: Request, db: Session = Depends(get_db)):  # noqa: B008
+    from app.models import Employee
+    emp = db.get(Employee, emp_id)
+    if emp is None:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    return templates.TemplateResponse(
+        request,
+        "employees/detail.html",
+        {"page": "employees", "emp": emp},
+    )
+
+
+@app.get("/employees/{emp_id}/edit", response_class=HTMLResponse, tags=["ui"])
+def employee_edit_form(emp_id: int, request: Request, db: Session = Depends(get_db)):  # noqa: B008
+    from app.models import Employee
+    emp = db.get(Employee, emp_id)
+    if emp is None:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    return templates.TemplateResponse(
+        request,
+        "employees/edit.html",
+        {"page": "employees", "emp": emp},
+    )
+
+
+# ---------------------------------------------------------------------------
 # Employees API
 # ---------------------------------------------------------------------------
 
