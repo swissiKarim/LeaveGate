@@ -7,13 +7,17 @@ import httpx
 
 base_url = os.environ.get("ASB_SVC_WEB_URL", os.environ.get("ASB_API_BASE", "http://localhost:8080"))
 
-# First ensure employee with id=1 exists (create if needed)
-emp_resp = httpx.post(
-    f"{base_url}/api/employees",
-    json={"name": "Bob", "email": "bob@test.com", "team": "Engineering", "remaining_days": 25},
-    timeout=10,
-)
-employee_id = emp_resp.json().get("id", 1)
+# Try to get employee with id=1 (created by SC-1); create if missing
+get_resp = httpx.get(f"{base_url}/api/employees/1", timeout=10)
+if get_resp.status_code == 200:
+    employee_id = 1
+else:
+    emp_resp = httpx.post(
+        f"{base_url}/api/employees",
+        json={"name": "Alice", "email": "alice@test.com", "team": "Engineering", "remaining_days": 20},
+        timeout=10,
+    )
+    employee_id = emp_resp.json().get("id", 1)
 
 payload = {
     "employee_id": employee_id,
