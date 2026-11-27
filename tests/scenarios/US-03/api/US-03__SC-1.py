@@ -2,8 +2,8 @@
 """SC-1: 404 response uses unified error JSON — body.error and body.detail exist."""
 import json
 import os
-import urllib.request
 import urllib.error
+import urllib.request
 
 base_url = os.environ.get("ASB_SVC_WEB_URL", os.environ.get("ASB_API_BASE", "http://localhost:8080"))
 

@@ -43,6 +43,13 @@ class EmployeeCreate(BaseModel):
     remaining_days: int = 20
 
 
+class EmployeePatch(BaseModel):
+    name: str | None = None
+    email: str | None = None
+    team: str | None = None
+    remaining_days: int | None = None
+
+
 class EmployeeOut(BaseModel):
     id: int
     name: str
@@ -154,9 +161,32 @@ async def dashboard(request: Request):
 # ---------------------------------------------------------------------------
 
 @app.get("/api/employees", tags=["employees"])
-def list_employees(db: Session = Depends(get_db)):  # noqa: B008
+def list_employees(
+    q: str | None = None,
+    team: str | None = None,
+    sort: str | None = None,
+    page: int = 1,
+    page_size: int = 20,
+    db: Session = Depends(get_db),  # noqa: B008
+):
     from app.models import Employee
-    return db.query(Employee).all()
+
+    query = db.query(Employee)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            Employee.name.ilike(like) | Employee.email.ilike(like)
+        )
+    if team:
+        query = query.filter(Employee.team == team)
+    if sort:
+        col = sort.lstrip("-")
+        col_attr = getattr(Employee, col, None)
+        if col_attr is not None:
+            query = query.order_by(col_attr.desc() if sort.startswith("-") else col_attr)
+    offset = (max(page, 1) - 1) * page_size
+    items = query.offset(offset).limit(page_size).all()
+    return {"items": [EmployeeOut.model_validate(e) for e in items]}
 
 
 @app.post("/api/employees", status_code=201, response_model=EmployeeOut, tags=["employees"])
@@ -179,13 +209,14 @@ def get_employee(emp_id: int, db: Session = Depends(get_db)):  # noqa: B008
 
 
 @app.patch("/api/employees/{emp_id}", response_model=EmployeeOut, tags=["employees"])
-def patch_employee(emp_id: int, payload: EmployeeCreate, db: Session = Depends(get_db)):  # noqa: B008
+def patch_employee(emp_id: int, payload: EmployeePatch, db: Session = Depends(get_db)):  # noqa: B008
     from app.models import Employee
     emp = db.get(Employee, emp_id)
     if emp is None:
         raise HTTPException(status_code=404, detail="Employee not found")
     for k, v in payload.model_dump(exclude_unset=True).items():
-        setattr(emp, k, v)
+        if v is not None:
+            setattr(emp, k, v)
     db.commit()
     db.refresh(emp)
     return emp
