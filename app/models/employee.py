@@ -10,6 +10,6 @@ class Employee(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     team: Mapped[str] = mapped_column(String(255), nullable=False)
     remaining_days: Mapped[int] = mapped_column(Integer, nullable=False, default=20)
