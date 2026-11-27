@@ -7,6 +7,7 @@ import sys
 result = subprocess.run(
     [sys.executable, "-m", "pytest", "--tb=short", "-q"],
     capture_output=True,
+    check=False,
     text=True,
 )
 

@@ -11,7 +11,7 @@ try:
     with urllib.request.urlopen(req) as resp:
         status = resp.status
         body = resp.read().decode()
-except Exception as e:
+except OSError as e:
     status = 0
     body = str(e)
 

@@ -1,6 +1,6 @@
 schemaVersion: 4
-rationale: FastAPI skeleton for LeaveGate; conftest.py auto-installs deps so platform_default
-  pytest slot works; API scenarios require the web service
+rationale: FastAPI LeaveGate app with SQLAlchemy models, auto-migration on startup,
+  and in-memory SQLite test fixtures; API scenarios require the web service
 components:
 - name: app
   path: .
