@@ -1,6 +1,6 @@
 schemaVersion: 4
 rationale: FastAPI LeaveGate app with SQLAlchemy models, auto-migration on startup,
-  and in-memory SQLite test fixtures; API scenarios require the web service
+  unified error JSON for 4xx/5xx; API scenarios require the web service
 components:
 - name: app
   path: .
@@ -23,6 +23,7 @@ components:
 definition_of_done:
 - ruff check . und pytest laufen ohne Fehler
 - GET /health antwortet auf Port 8080 (Dienst web)
+- Alle 4xx/5xx-Antworten liefern einheitliches Fehler-JSON
 network:
   needs: []
 services:
