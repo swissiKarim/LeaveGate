@@ -1,3 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
 node_modules/
 dist/
 coverage/
@@ -8,8 +17,3 @@ junit.xml
 .env.*
 *.log
 .DS_Store
-*.db
-*.db-shm
-*.db-wal
-*.sqlite
-*.sqlite3
