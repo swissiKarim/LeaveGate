@@ -3,6 +3,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 def _ensure_deps():
     """Install requirements if fastapi is not importable."""
@@ -20,15 +22,9 @@ def _ensure_deps():
         importlib.reload(site)
 
 
-_ensure_deps()
+def pytest_configure(config):
+    _ensure_deps()
 
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
-from app.database import Base, get_db
-from app.main import app
 
 # In-memory SQLite for tests
 TEST_DATABASE_URL = "sqlite://"
@@ -37,9 +33,12 @@ TEST_DATABASE_URL = "sqlite://"
 @pytest.fixture(scope="session")
 def engine():
     """Create a fresh in-memory SQLite engine for the test session."""
-    import app.models  # noqa: F401 – registers all ORM models on Base
+    from sqlalchemy import create_engine as _create_engine
 
-    _engine = create_engine(
+    import app.models  # noqa: F401 – registers all ORM models on Base
+    from app.database import Base
+
+    _engine = _create_engine(
         TEST_DATABASE_URL,
         connect_args={"check_same_thread": False},
     )
@@ -52,6 +51,8 @@ def engine():
 @pytest.fixture()
 def db_session(engine):
     """Yield a transactional DB session that is rolled back after each test."""
+    from sqlalchemy.orm import sessionmaker
+
     connection = engine.connect()
     transaction = connection.begin()
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=connection)
@@ -65,6 +66,10 @@ def db_session(engine):
 @pytest.fixture()
 def client(db_session):
     """FastAPI test client wired to the in-memory test DB session."""
+    from fastapi.testclient import TestClient
+
+    from app.database import get_db
+    from app.main import app
 
     def override_get_db():
         try:
